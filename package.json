@@ -1,0 +1,15 @@
+{
+  "name": "botframework",
+  "version": "1.0.0",
+  "description": "Demo sample for university bot using Bot Framework",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Guillem Puche",
+  "license": "ISC",
+  "dependencies": {
+    "botbuilder": "^3.14.0",
+    "restify": "^6.3.4"
+  }
+}

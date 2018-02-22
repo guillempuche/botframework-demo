@@ -1,0 +1,15 @@
+.vscode
+
+# Dependency directories
+node_modules
+
+# Output files
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+
+
