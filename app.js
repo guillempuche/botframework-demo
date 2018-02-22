@@ -1,5 +1,6 @@
 const builder = require('botbuilder');
 const restify = require('restify');
+require('dotenv').config()
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -9,8 +10,9 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
-    appId: '', // process.env.MICROSOFT_APP_ID,
-    appPassword: '' //process.env.MICROSOFT_APP_PASSWORD
+    // https://docs.microsoft.com/en-us/bot-framework/bot-service-troubleshoot-authentication-problems
+    appId: process.env.MICROSOFT_APP_ID,
+    appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
 
 // Listen for messages from users 
