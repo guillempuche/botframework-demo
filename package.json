@@ -1,5 +1,5 @@
 {
-  "name": "botframework",
+  "name": "guillem-botframework-demo",
   "version": "1.0.0",
   "description": "Demo sample for university bot using Bot Framework",
   "main": "app.js",
