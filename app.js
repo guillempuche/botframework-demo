@@ -11,19 +11,14 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     // https://docs.microsoft.com/en-us/bot-framework/bot-service-troubleshoot-authentication-problems
-<<<<<<< HEAD
-    appId: process.env.MicrosoftAppid,
-    appPassword: process.env.MicrosoftAppPassword
-=======
     appId: process.env.MICROSOFT_APP_ID,
     appPassword: process.env.MICROSOFT_APP_PASSWORD
->>>>>>> 6032a7be41fcfb987ead63904c232a60c73c66bf
 });
 
 // Listen for messages from users 
 server.post('/api/messages', connector.listen());
 
-const bot = new builder.UniversalBot(connector);
+var bot = new builder.UniversalBot(connector);
 
 bot.dialog('/', [
     (session, results, next) => {
