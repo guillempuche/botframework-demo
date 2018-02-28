@@ -1,5 +1,9 @@
 .vscode
 
+# Ficheros extras
+test.js
+notas.txt
+
 # Dependency directories
 node_modules
 
