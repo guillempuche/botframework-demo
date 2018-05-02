@@ -1,8 +1,15 @@
+/**
+ * Si se usa debugger de VSCode se deben añadir las variables 'env'
+ * en el archivo launch.json para que se carguen.
+ */
+
 const builder = require('botbuilder');
 const restify = require('restify');
 require('dotenv').config();
-var azure = require('botbuilder-azure'); 
 var MongoClient = require('mongodb').MongoClient;
+
+// URL de la base de datos (desactivada) de la nube de Azure
+const url = `mongodb://botframework-demo:${process.env.AZURE_COSMOSDB_MASTER_KEY}@botframework-demo.documents.azure.com:10255/?ssl=true`
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -10,40 +17,112 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
 
-var documentDbOptions = {
-    host: 'botframework-demo.documents.azure.com', 
-    masterKey: 'cww3jgWeWDgKqRkdUdpmgOTa8RNLN01P9RLPgRKyUt44cmAHYIYen510vWJeu2sUOInTgTjjFCbQKDQrwf77Qg==', 
-    database: 'test',   
-    collection: 'test1'
-};
-
-// Create an instance of 'DocumentDBClient' passing in the connection configuration settings
-var docDbClient = new azure.DocumentDbClient(documentDbOptions);
-// Create an instance of 'AzureBotStorage' passing in the DocumentDBClient
-var cosmosStorage = new azure.AzureBotStorage({ gzipData: false }, docDbClient);
-
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
     // https://docs.microsoft.com/en-us/bot-framework/bot-service-troubleshoot-authentication-problems
     
     // Test on Web Chat Emulator Localhost
-    //appId: null,
-    //appPassword: null
+    appId: null,
+    appPassword: null
 
     // Deploy on Azure App Service
-    appId: process.env.MicrosoftAppId,
-    appPassword: process.env.MicrosoftAppPassword
+    //appId: process.env.MicrosoftAppId,
+    //appPassword: process.env.MicrosoftAppPassword
 });
 
 // Listen for messages from users 
 server.post('/api/messages', connector.listen());
 
-var bot = new builder.UniversalBot(connector)
-    .set('storage', cosmosStorage); // Register in-memory storage
+// Referencias par UniversalBot
+//  https://docs.botframework.com/en-us/node/builder/chat-reference/classes/_botbuilder_d_.universalbot.html
+var bot = new builder.UniversalBot(connector);
 
+/**
+ * Comprobar que el intento tiene una confidencia mínima de
+ * 0.4 para que no haya limitar los errores de analisis NLP.
+ * Modificar el limite por defecto de 0.1 a 0.4
+ * https://docs.botframework.com/en-us/node/builder/chat-reference/interfaces/_botbuilder_d_.iintentdialogoptions.html
+ */ 
+const commonIntentDialog = new builder.IntentDialog({
+    intentThreshold: 0.4
+})
+/**
+ * Función 'recognizer' para decir a Bot Framework cuál es el intento del mensaje del usuario
+ * Utiliza la plataforma de NLP de Recast.ai que analiza intento y entidades del mensaje.
+ * Más información del objeto devuelto por Recast en https://recast.ai/docs/api-reference/#request-text
+ */
+bot.recognizer({
+    recognize: require('./lib/nlp.js')
+})
+
+/**
+ * Función para registrar todos los mensajes en:
+ *  - CosmosDB -> 'test' database -> 'messages' collection
+ */
+/*const logUserConversation = (session) => {
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+
+        var dbo = db.db("test");
+
+        // insert a new document
+        dbo.messages.insertOne(
+            {
+                "user_id": "1",
+                "timestamp": session.timestamp(),
+                "bot_name": "bot-demo",
+                "channelId": "",
+                "locale": "",
+                "message_is": "",
+                "message": {
+                    "context": "",
+                    "text": ""
+                }
+            }
+        )
+    });
+};*/
+
+/**
+ * Middleware para registrar mensajes a la base de datos
+ * https://github.com/Microsoft/BotBuilder/blob/34454c5ff374c5bb33f21439ded6fed1459e4c0e/Node/core/lib/bots/UniversalBot.js#L104
+ */
+bot.use({
+    // Usuario recibe mensaje del bot
+    receive: function (session, next) {
+        session.messageForUser = "received";
+        require('./lib/log_database').log(session)
+        // logUserConversation(session);
+        next();
+    },
+    // Usuario envia mensaje del bot
+    send: function (session, next) {
+        session.messageForUser = "sent";
+        require('./lib/log_database').log(session)
+        //logUserConversation(session);
+
+        /*
+        // Siguientes lineas sirven para analizar intento y entidades del mensaje
+        // Formato del objeto recibido en https://recast.ai/docs/api-reference/#request-text
+        //const response = getRecastAnalyse(session);
+        //const response = await require('./lib/recast.js').getRecastAnalyse(message, "ca");
+        
+        const data = response.data.results;
+        // Devolver una matriz con solo los valores clave (o nombre principal) de cada entidad
+        const entities = Object.keys(response.data.results.entities);
+        console.log(`Intent: ${data.intents[0].slug} | Entities: ${entities} | Confidence: ${data.intents[0].confidence}`);
+        */
+        next();
+    }
+});
+
+/**
+ * Función 'Dialog' que interectua con el usuario.
+ * Tiene el objetivo de testear nuevas funciones para el chat.
+ */
 bot.dialog('/', [
     (session, results, next) => {
-        if (session.conversationData.name == null) {
+        if (session.conversationData.name == undefined) {
             session.send("Hola i benvingut! Jo sóc l'APU.");
             builder.Prompts.text(session, "I tu com et dius?");
         } else {
@@ -51,11 +130,11 @@ bot.dialog('/', [
             next();
         }
     },
-    (session, results, next) => {
+    (session, results) => {
         if (results.response) session.conversationData.name = results.response;
         session.beginDialog('menu');
     },
-    (session, next) => {
+    (session) => {
         session.send("Default dialog");
     }
 ]).triggerAction({

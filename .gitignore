@@ -1,19 +1,16 @@
 .vscode
 
-# Ficheros extras
+# Carpetas y ficheros extras
+database
 test.js
 notas.txt
+dialogs/sample.js
 
 # Dependency directories
 node_modules
 
 # Output files
 .env
-
-# Logs
-logs
-*.log
-npm-debug.log*
 
 
 
