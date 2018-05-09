@@ -2,9 +2,12 @@
 
 # Carpetas y ficheros extras
 database
-test.js
-notas.txt
+others
 dialogs/sample.js
+
+# Sobre Gulp
+gulpfile.js
+dist/
 
 # Dependency directories
 node_modules

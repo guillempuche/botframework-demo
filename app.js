@@ -3,15 +3,20 @@
  * en el archivo launch.json para que se carguen.
  */
 
+'use strict';
+
+if (process.env.NODE_ENV !== 'production') { // require('dotenv').config();
+    // this put the environment variables = undefined. https://github.com/RecastAI/SDK-NodeJS/issues/35
+    require('dotenv').load();
+};
 const builder = require('botbuilder');
 const restify = require('restify');
-require('dotenv').config();
 var MongoClient = require('mongodb').MongoClient;
 
 // URL de la base de datos (desactivada) de la nube de Azure
 const url = `mongodb://botframework-demo:${process.env.AZURE_COSMOSDB_MASTER_KEY}@botframework-demo.documents.azure.com:10255/?ssl=true`
 
-// Setup Restify Server
+// Configurar servidor Restify
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function () {
     console.log('%s listening to %s', server.name, server.url);
@@ -46,73 +51,48 @@ var bot = new builder.UniversalBot(connector);
 const commonIntentDialog = new builder.IntentDialog({
     intentThreshold: 0.4
 })
+
 /**
  * Función 'recognizer' para decir a Bot Framework cuál es el intento del mensaje del usuario
  * Utiliza la plataforma de NLP de Recast.ai que analiza intento y entidades del mensaje.
+ * 
+ * IMPORTANTE: esta función se ejecuta después de bot.use()
+ * 
  * Más información del objeto devuelto por Recast en https://recast.ai/docs/api-reference/#request-text
  */
 bot.recognizer({
-    recognize: require('./lib/nlp.js')
+    recognize: require('./lib/nlp').nlp
 })
 
 /**
- * Función para registrar todos los mensajes en:
- *  - CosmosDB -> 'test' database -> 'messages' collection
- */
-/*const logUserConversation = (session) => {
-    MongoClient.connect(url, function(err, db) {
-        if (err) throw err;
-
-        var dbo = db.db("test");
-
-        // insert a new document
-        dbo.messages.insertOne(
-            {
-                "user_id": "1",
-                "timestamp": session.timestamp(),
-                "bot_name": "bot-demo",
-                "channelId": "",
-                "locale": "",
-                "message_is": "",
-                "message": {
-                    "context": "",
-                    "text": ""
-                }
-            }
-        )
-    });
-};*/
-
-/**
- * Middleware para registrar mensajes a la base de datos
- * https://github.com/Microsoft/BotBuilder/blob/34454c5ff374c5bb33f21439ded6fed1459e4c0e/Node/core/lib/bots/UniversalBot.js#L104
+ * Función middleware para registrar mensajes a la base de datos.
+ * 
+ * IMPORTANTE: esta función se ejecuta antes de bot.recognizer(),
+ * es decir, se ejectura antes de saber el 'intent' del mensaje.
+ * 
+ * Más información en https://github.com/Microsoft/BotBuilder/blob/34454c5ff374c5bb33f21439ded6fed1459e4c0e/Node/core/lib/bots/UniversalBot.js#L104
  */
 bot.use({
-    // Usuario recibe mensaje del bot
-    receive: function (session, next) {
-        session.messageForUser = "received";
-        require('./lib/log_database').log(session)
-        // logUserConversation(session);
+    // El bot recibe un mensaje
+    botbuilder: function (session, next) {
+        // Filtrar el mensaje del objeto 'session' ya que entre los mensajes
+        // del usuario o el bot hay informacion irrelevante 'conversationUpdate'
+        if (session.type != "conversationUpdate") {
+            session.messageWatchedFromBot = "received";
+            require('./lib/log_database').logMessage(session)
+        }
         next();
     },
-    // Usuario envia mensaje del bot
+    // el bot envia un mensaje
     send: function (session, next) {
-        session.messageForUser = "sent";
-        require('./lib/log_database').log(session)
-        //logUserConversation(session);
-
-        /*
-        // Siguientes lineas sirven para analizar intento y entidades del mensaje
-        // Formato del objeto recibido en https://recast.ai/docs/api-reference/#request-text
-        //const response = getRecastAnalyse(session);
-        //const response = await require('./lib/recast.js').getRecastAnalyse(message, "ca");
-        
-        const data = response.data.results;
-        // Devolver una matriz con solo los valores clave (o nombre principal) de cada entidad
-        const entities = Object.keys(response.data.results.entities);
-        console.log(`Intent: ${data.intents[0].slug} | Entities: ${entities} | Confidence: ${data.intents[0].confidence}`);
-        */
+        // Filtrar el mensaje del objeto 'session' ya que entre los mensajes
+        // del usuario o el bot hay informacion irrelevante 'conversationUpdate'
+        if (session.type != "conversationUpdate") {
+            session.messageWatchedFromBot = "sent";
+            require('./lib/log_database').logMessage(session)
+        }
         next();
+
     }
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "botframework-test",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "Bot demo usando el Bot Framework",
   "main": "app.js",
   "scripts": {
@@ -10,18 +10,25 @@
   "author": "Guillem Puche",
   "license": "ISC",
   "engines": {
-    "node": "8.9.3",
+    "node": "8.11.1",
     "npm": "5.7.1"
   },
   "dependencies": {
-    "@google/chatbase": "^1.1.0",
     "axios": "^0.18.0",
-    "botbuilder": "^3.14.0",
+    "botbuilder": "^3.15.0",
     "botbuilder-azure": "^3.0.4",
     "dashbot": "^9.5.0",
     "dotenv": "^5.0.0",
     "mongodb": "^3.0.3",
     "recastai": "^3.7.0",
-    "restify": "^6.3.4"
+    "restify": "^6.4.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.6.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^7.0.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-sourcemaps": "^2.6.4"
   }
 }
