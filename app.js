@@ -90,16 +90,13 @@ bot.use({
     // se executan las operaciones practicamente al mismo tiempo. Es decir, no
     // se ejecuta todo el codigo de de 'logMessage' sino que se ejecuta algunas linias
     // se ejecutan primero para cada objeto 'session' y despues se ejecuta otra linia.
+    // En 'log_database.js' se usa un delay para solucionarlo.
     send: function (session, next) { // IMPORTANTE: objeto 'session' es diferente que en mensaje recibido 
         // Filtrar el mensaje del objeto 'session' ya que entre los mensajes
         // del usuario o el bot hay informacion irrelevante 'conversationUpdate'
         if (session.type != "conversationUpdate") {
             session.messageWatchedFromBot = "sent";
-
-            // Se tiene que retrasar (mínimo 40 milisegundos ) porque cuando
-            // el bot envia 2 mensajes la plataforma Dashbot los registra
-            // en orden inverso. Se puede comprobar quitando el retraso.
-            setTimeout(require('./lib/log_database').logMessage(session), 40);
+            require('./lib/log_database').logMessage(session)
         }
         next();
 
